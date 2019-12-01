@@ -1,7 +1,6 @@
 package com.bipullohia.moviecatalogservice.resources;
 
-import java.util.Arrays;
-import java.util.Collections;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,8 +12,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.bipullohia.moviecatalogservice.models.CatalogItem;
 import com.bipullohia.moviecatalogservice.models.Movie;
-import com.bipullohia.moviecatalogservice.models.Rating;
 import com.bipullohia.moviecatalogservice.models.UserRating;
+import com.netflix.discovery.DiscoveryClient;
 
 @RestController
 @RequestMapping("/catalog")
@@ -23,16 +22,21 @@ public class MovieCatalogResource {
 	@Autowired
 	RestTemplate restTemplate;
 	
+	//this is used to get more details about the instances running on Discovery Server
+//	@Autowired
+//	private DiscoveryClient discoveryClient;
+	
+	
 	@RequestMapping("/{userId}")
 	public List<CatalogItem> getMovieCatalogItemsForUser(@PathVariable("userId") String userId){
 		
 		//1. Get all rated movieIds
-		UserRating userRating = restTemplate.getForObject("http://localhost:8083/rating/users/" + userId, UserRating.class);
+		UserRating userRating = restTemplate.getForObject("http://ratings-data-service/rating/users/" + userId, UserRating.class);
 		
 		//2. For each movieId, call movie info service and get details
 		return userRating.getUserRating().stream().map(rating -> {
 			
-		Movie movie = restTemplate.getForObject("http://localhost:8082/movies/" + rating.getMovieId(), Movie.class);
+		Movie movie = restTemplate.getForObject("http://movie-info-service/movies/" + rating.getMovieId(), Movie.class);
 		
 		//3. Put them all together for the final result
 		return new CatalogItem(movie.getName(), "Movie Desc", rating.getRating());	
@@ -42,7 +46,8 @@ public class MovieCatalogResource {
 	}
 }
 
-/*
+
+/*This is the new way to make internal and external (sync/async) API calls
  * Movie movie = webClientBuilder.build()
  * 					.get()
  * 					.url("")
